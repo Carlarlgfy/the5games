@@ -1,0 +1,123 @@
+import pygame
+import sys
+
+# Initialize Pygame
+pygame.init()
+
+# Constants
+WIDTH, HEIGHT = 600, 600
+GRID_SIZE = 60
+GRID_WIDTH = WIDTH // GRID_SIZE
+GRID_HEIGHT = HEIGHT // GRID_SIZE
+WHITE = (255, 255, 255)
+RED = (255, 0, 0)
+BLUE = (0, 0, 255)
+BLACK = (0, 0, 0)
+
+# Initialize the game window
+screen = pygame.display.set_mode((WIDTH, HEIGHT))
+pygame.display.set_caption("Connect Four")
+
+# Initialize variables
+grid = [[0 for _ in range(GRID_WIDTH)] for _ in range(GRID_HEIGHT)]
+player_turn = 1
+game_over = False
+winner = None
+restart_requested = False  # Flag to handle restart
+
+# Function to draw the grid
+def draw_grid():
+    # Clear the screen
+    screen.fill((0, 0, 0))
+    
+    # Draw white lines for rows and columns
+    for row in range(GRID_HEIGHT + 1):
+        pygame.draw.line(screen, WHITE, (0, row * GRID_SIZE), (WIDTH, row * GRID_SIZE), 2)
+    for col in range(GRID_WIDTH + 1):
+        pygame.draw.line(screen, WHITE, (col * GRID_SIZE, 0), (col * GRID_SIZE, HEIGHT), 2)
+
+    # Draw tokens
+    for row in range(GRID_HEIGHT):
+        for col in range(GRID_WIDTH):
+            if grid[row][col] == 1:
+                pygame.draw.circle(screen, RED, (col * GRID_SIZE + GRID_SIZE // 2, row * GRID_SIZE + GRID_SIZE // 2), GRID_SIZE // 2 - 5)
+            elif grid[row][col] == 2:
+                pygame.draw.circle(screen, BLUE, (col * GRID_SIZE + GRID_SIZE // 2, row * GRID_SIZE + GRID_SIZE // 2), GRID_SIZE // 2 - 5)
+
+# Function to check for a win
+def check_win(row, col):
+    directions = [(1, 0), (0, 1), (1, 1), (1, -1)]
+    for dr, dc in directions:
+        count = 1
+        for i in range(1, 4):
+            r, c = row + dr * i, col + dc * i
+            if 0 <= r < GRID_HEIGHT and 0 <= c < GRID_WIDTH and grid[r][c] == grid[row][col]:
+                count += 1
+            else:
+                break
+        for i in range(1, 4):
+            r, c = row - dr * i, col - dc * i
+            if 0 <= r < GRID_HEIGHT and 0 <= c < GRID_WIDTH and grid[r][c] == grid[row][col]:
+                count += 1
+            else:
+                break
+        if count >= 4:
+            return True
+    return False
+
+# Function to restart the game
+def restart_game():
+    global grid, player_turn, game_over, winner, restart_requested
+    grid = [[0 for _ in range(GRID_WIDTH)] for _ in range(GRID_HEIGHT)]
+    player_turn = 1
+    game_over = False
+    winner = None
+    restart_requested = False
+
+# Main game loop
+while True:
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            pygame.quit()
+            sys.exit()
+        if not game_over and not restart_requested and event.type == pygame.MOUSEBUTTONDOWN:
+            col = event.pos[0] // GRID_SIZE
+            for row in range(GRID_HEIGHT - 1, -1, -1):
+                if grid[row][col] == 0:
+                    grid[row][col] = player_turn
+                    if check_win(row, col):
+                        winner = player_turn
+                        game_over = True
+                    player_turn = 3 - player_turn  # Switch player
+                    break
+        elif game_over and event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_r:
+                restart_requested = True
+            elif event.key == pygame.K_q:
+                pygame.quit()
+                sys.exit()
+
+    draw_grid()
+
+    if game_over:
+        font = pygame.font.Font(None, 36)
+        if winner == 1:
+            text = font.render("Player Red wins!", True, WHITE)
+        else:
+            text = font.render("Player Blue wins!", True, WHITE)
+        screen.blit(text, (WIDTH // 2 - text.get_width() // 2, HEIGHT // 2 - text.get_height() // 2))
+        restart_text = font.render("Press 'R' to restart or 'Q' to quit.", True, WHITE)
+        screen.blit(restart_text, (WIDTH // 2 - restart_text.get_width() // 2, HEIGHT // 2 + text.get_height()))
+        pygame.display.update()
+
+        if restart_requested:
+            restart_game()
+
+    else:
+        font = pygame.font.Font(None, 36)
+        if player_turn == 1:
+            player_text = font.render("Player Red's Turn", True, WHITE)
+        else:
+            player_text = font.render("Player Blue's Turn", True, WHITE)
+        screen.blit(player_text, (10, 10))
+        pygame.display.update()

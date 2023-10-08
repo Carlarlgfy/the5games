@@ -1,0 +1,117 @@
+import pygame
+import sys
+
+# Initialize Pygame
+pygame.init()
+
+# Constants
+SCREEN_WIDTH = 800
+SCREEN_HEIGHT = 600
+PLATFORM_WIDTH = SCREEN_WIDTH
+PLATFORM_HEIGHT = 40  # Entire bottom of the screen as the platform
+SECOND_PLATFORM_WIDTH = 200
+SECOND_PLATFORM_HEIGHT = 10  # Reduced second platform height
+PLAYER_SIZE = 20
+PLAYER_SPEED = 1
+GRAVITY = 0.1
+JUMP_HEIGHT = -6
+MAX_JUMP_HEIGHT = -6
+
+# Lower the second platform and position it closer to the first platform
+SECOND_PLATFORM_Y = SCREEN_HEIGHT - 2 * PLATFORM_HEIGHT  # Lowered and positioned closer
+
+# Colors
+BLACK = (0, 0, 0)    # Background color
+RED = (255, 0, 0)    # Player color
+BLUE = (0, 0, 255)
+GREEN = (0, 255, 0)  # New platform color (green)
+
+# Create the screen
+screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+pygame.display.set_caption("Platformer Game")
+
+# Create the player
+player = pygame.Rect(50, 50, PLAYER_SIZE, PLAYER_SIZE)  # Spawn above the platform
+player_speed_x = 0
+player_speed_y = 0
+is_jumping = False  # Start without jumping
+jump_count = 0
+
+# Create the first platform (covers the entire bottom of the screen)
+platform = pygame.Rect(0, SCREEN_HEIGHT - PLATFORM_HEIGHT, PLATFORM_WIDTH, PLATFORM_HEIGHT)
+
+# Create the second platform (centered in the middle of the screen, lowered and closer to the first platform)
+second_platform = pygame.Rect(SCREEN_WIDTH // 2 - SECOND_PLATFORM_WIDTH // 2, SECOND_PLATFORM_Y, SECOND_PLATFORM_WIDTH, SECOND_PLATFORM_HEIGHT)
+
+# Game loop
+running = True
+while running:
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+
+    # Handle player input
+    keys = pygame.key.get_pressed()
+    if keys[pygame.K_a]:
+        player_speed_x = -PLAYER_SPEED
+    elif keys[pygame.K_d]:
+        player_speed_x = PLAYER_SPEED
+    else:
+        player_speed_x = 0
+
+    # Jump logic
+    if keys[pygame.K_w] and not is_jumping:
+        player_speed_y = JUMP_HEIGHT
+        is_jumping = True
+
+    # Apply gravity
+    player_speed_y += GRAVITY
+
+    # Update player position
+    player.x += player_speed_x
+    player.y += player_speed_y
+
+    # Screen boundaries
+    if player.left < 0:
+        player.left = 0
+    if player.right > SCREEN_WIDTH:
+        player.right = SCREEN_WIDTH
+
+    # Check for collisions with the first platform
+    if player.colliderect(platform):
+        if player_speed_y > 0:
+            player_speed_y = 0
+            player.y = platform.y - PLAYER_SIZE
+            is_jumping = False
+            jump_count = 0
+
+    # Check for collisions with the second platform
+    if player.colliderect(second_platform):
+        if player_speed_y > 0:
+            player_speed_y = 0
+            player.y = second_platform.y - PLAYER_SIZE
+            is_jumping = False
+            jump_count = 0
+
+    # If the player is on the ground, reset the jump count
+    if not player.colliderect(platform) and not player.colliderect(second_platform):
+        jump_count = 1
+
+    # Clear the screen
+    screen.fill(BLACK)
+
+    # Draw the first platform
+    pygame.draw.rect(screen, BLUE, platform)
+
+    # Draw the second platform (lowered, closer to the first platform, and with reduced height)
+    pygame.draw.rect(screen, GREEN, second_platform)
+
+    # Draw the player
+    pygame.draw.rect(screen, RED, player)
+
+    # Update the display
+    pygame.display.flip()
+
+# Quit Pygame
+pygame.quit()
+sys.exit()
